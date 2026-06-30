@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nokia Snake II</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+button{touch-action:manipulation;font-family:'Courier New',monospace;}
+
+body{
+  background:radial-gradient(ellipse at center, #1e1e3a 0%, #0d0d1a 100%);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  min-height:100vh;min-height:100dvh;
+  font-family:'Courier New',monospace;
+  overflow:hidden;touch-action:none;
+}
+
+.phone{
+  background:linear-gradient(165deg,#2e2e48 0%,#1c1c32 100%);
+  border-radius:30px 30px 50px 50px;
+  padding:14px 14px 20px;
+  box-shadow:0 30px 80px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.07);
+  width:min(340px,96vw);
+  border:1.5px solid #3c3c5e;
+}
+
+.phone-top{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:4px 6px 10px;
+}
+.brand{color:#4a4a70;font-size:13px;font-weight:bold;letter-spacing:3px;}
+.signal{display:flex;gap:2px;align-items:flex-end;}
+.signal span{background:#3e3e62;border-radius:1px;width:4px;}
+.signal span:nth-child(1){height:4px;}
+.signal span:nth-child(2){height:7px;}
+.signal span:nth-child(3){height:10px;}
+.signal span:nth-child(4){height:13px;}
+
+/* ── Screen ── */
+.screen-frame{
+  background:#090909;border-radius:6px;
+  padding:6px;margin-bottom:12px;
+  box-shadow:inset 0 0 12px rgba(0,0,0,.95),0 0 0 1px #2a2a2a;
+}
+.screen-top{
+  background:#3d6b4a;padding:3px 8px;
+  display:flex;justify-content:space-between;align-items:center;
+  border-radius:3px 3px 0 0;
+}
+.screen-top span{color:#1a3a22;font-size:10px;font-weight:bold;letter-spacing:.5px;}
+#gameCanvas{display:block;background:#4a7c59;}
+.level-track{height:3px;background:#1c3a24;}
+.level-fill{height:100%;background:#6aac7a;transition:width .4s ease;}
+.screen-bot{
+  background:#3d6b4a;padding:3px 8px;
+  display:flex;justify-content:space-between;
+  border-radius:0 0 3px 3px;
+}
+.screen-bot span{color:#1a3a22;font-size:9px;font-weight:bold;}
+
+/* ── Soft keys ── */
+.softlabel-row{display:flex;justify-content:space-between;padding:6px 10px 2px;}
+.softlabel{color:#4a4a6e;font-size:9px;letter-spacing:.5px;}
+.softkey-row{display:flex;justify-content:space-between;align-items:center;padding:0 6px;margin-bottom:10px;}
+.soft-btn{
+  background:linear-gradient(145deg,#38385e,#252545);
+  border:none;border-radius:8px;color:#8080b0;
+  font-size:9px;padding:7px 13px;cursor:pointer;letter-spacing:.5px;
+  box-shadow:2px 2px 5px rgba(0,0,0,.55),-1px -1px 2px rgba(255,255,255,.04);
+}
+.soft-btn:active{transform:translateY(1px);box-shadow:1px 1px 2px rgba(0,0,0,.5);}
+.ok-btn{
+  background:linear-gradient(145deg,#4848 78,#333368);
+  border:none;border-radius:50%;width:40px;height:40px;
+  color:#a0a0d0;font-size:11px;cursor:pointer;
+  box-shadow:2px 2px 6px rgba(0,0,0,.6);
+}
+.ok-btn:active{transform:scale(.93);}
+
+/* ── D-pad ── */
+.dpad{
+  display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);
+  gap:3px;justify-content:center;margin-bottom:12px;
+}
+.dp{
+  background:linear-gradient(145deg,#38385e,#252545);
+  border:none;border-radius:9px;color:#8080b0;font-size:18px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:2px 2px 5px rgba(0,0,0,.55),-1px -1px 2px rgba(255,255,255,.04);
+  transition:transform .08s,box-shadow .08s;user-select:none;
+}
+.dp:active,.dp.lit{
+  transform:scale(.91);
+  box-shadow:1px 1px 3px rgba(0,0,0,.5);
+  background:linear-gradient(145deg,#252545,#38385e);
+}
+.dp-blank{background:transparent!important;box-shadow:none!important;cursor:default;}
+.dp-center{background:linear-gradient(145deg,#4848 78,#333368)!important;border-radius:50%!important;}
+
+/* ── Bottom row ── */
+.bot-row{display:flex;justify-content:space-around;padding:0 18px;}
+.bot-btn{
+  background:linear-gradient(145deg,#2a2a48,#1a1a30);
+  border:none;border-radius:50%;width:34px;height:34px;
+  color:#55557a;font-size:12px;cursor:pointer;
+  box-shadow:1px 1px 4px rgba(0,0,0,.5);
+}
+.bot-btn:active{transform:scale(.92);}
+.share-dot{
+  background:linear-gradient(145deg,#25a04a,#1a7535)!important;
+  color:#c8ffd0!important;font-size:14px;
+}
+
+/* ── Modal ── */
+.overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
+  z-index:200;justify-content:center;align-items:center;padding:16px;
+}
+.overlay.on{display:flex;}
+.modal{
+  background:#1a1a30;border:1.5px solid #3a3a60;border-radius:18px;
+  padding:22px 20px;width:min(310px,92vw);color:#b0b0d8;
+  max-height:88vh;overflow-y:auto;
+}
+.modal h2{color:#4a8c5a;font-size:15px;margin-bottom:10px;letter-spacing:1px;}
+.modal p{font-size:11.5px;line-height:1.65;margin-bottom:10px;color:#8888b0;}
+.modal ol{font-size:11.5px;line-height:1.8;padding-left:18px;margin-bottom:14px;color:#8888b0;}
+.modal a{color:#5aac6a;}
+.wa-btn{
+  display:block;width:100%;background:#25D366;color:#fff;border:none;
+  border-radius:10px;padding:13px;font-size:14px;font-weight:bold;
+  cursor:pointer;margin-bottom:8px;letter-spacing:.5px;
+}
+.wa-btn:active{opacity:.88;}
+.cancel-btn{
+  display:block;width:100%;background:#2a2a48;color:#7070a0;border:none;
+  border-radius:10px;padding:10px;font-size:11px;cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <div class="phone-top">
+    <span class="brand">NOKIA</span>
+    <div class="signal">
+      <span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- Screen -->
+  <div class="screen-frame">
+    <div class="screen-top">
+      <span>SNAKE II</span>
+      <span id="scoreEl">0</span>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div class="level-track"><div class="level-fill" id="levelFill" style="width:5%"></div></div>
+    <div class="screen-bot">
+      <span id="levelEl">LVL 1 / 20</span>
+      <span id="hiEl">HI: 0</span>
+    </div>
+  </div>
+
+  <!-- Soft keys -->
+  <div class="softlabel-row">
+    <span class="softlabel">MENU</span>
+    <span class="softlabel">PAUSE</span>
+  </div>
+  <div class="softkey-row">
+    <button class="soft-btn" onclick="doMenu()">MENU</button>
+    <button class="ok-btn" onclick="doOK()">OK</button>
+    <button class="soft-btn" onclick="doPause()">PAUSE</button>
+  </div>
+
+  <!-- D-pad -->
+  <div class="dpad">
+    <div class="dp dp-blank"></div>
+    <button class="dp" id="bU" onclick="dir2(1)">▲</button>
+    <div class="dp dp-blank"></div>
+
+    <button class="dp" id="bL" onclick="dir2(2)">◄</button>
+    <div class="dp dp-blank dp-center"></div>
+    <button class="dp" id="bR" onclick="dir2(3)">►</button>
+
+    <div class="dp dp-blank"></div>
+    <button class="dp" id="bD" onclick="dir2(0)">▼</button>
+    <div class="dp dp-blank"></div>
+  </div>
+
+  <!-- Bottom row -->
+  <div class="bot-row">
+    <button class="bot-btn">✱</button>
+    <button class="bot-btn share-dot" onclick="openShare()" title="Share">&#8679;</button>
+    <button class="bot-btn">#</button>
+  </div>
+
+</div>
+
+<!-- Share modal -->
+<div class="overlay" id="shareOverlay">
+  <div class="modal">
+    <h2>📲 SHARE VIA WHATSAPP</h2>
+
+    <div id="shareHosted" style="display:none">
+      <p>Tap below to send this game link to your friends on WhatsApp. They can play it instantly in their phone browser — no install needed!</p>
+      <button class="wa-btn" onclick="waShare()">Share on WhatsApp 💬</button>
+    </div>
+
+    <div id="shareLocal">
+      <p>You're running the game locally. To share with friends, host it online for free in 30 seconds:</p>
+      <ol>
+        <li>Go to <a href="https://app.netlify.com/drop" target="_blank">netlify.com/drop</a></li>
+        <li>Drag &amp; drop <strong>snake.html</strong> onto the page</li>
+        <li>Copy the link Netlify gives you</li>
+        <li>Paste it in WhatsApp — done! 🎉</li>
+      </ol>
+      <p>Or send the <strong>snake.html</strong> file directly via WhatsApp — your friend can save it and open it in their browser.</p>
+    </div>
+
+    <button class="cancel-btn" onclick="closeShare()">CLOSE</button>
+  </div>
+</div>
+
+<script>
+// ── Canvas sizing (responsive) ────────────────────────────────────────────────
+const COLS = 20, ROWS = 16;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+function calcCell() {
+  const avail = Math.min(window.innerWidth * 0.95 - 44, 308);
+  return Math.floor(avail / COLS);
+}
+
+let CELL = calcCell();
+canvas.width  = COLS * CELL;
+canvas.height = ROWS * CELL;
+
+// ── Palette ───────────────────────────────────────────────────────────────────
+const BG      = '#4a7c59';
+const GRID    = '#3d6b4a';
+const BODY    = '#1a3a22';
+const HEAD    = '#0d2211';
+const FOOD_C  = '#1a3a22';
+const EYE_C   = '#4a7c59';
+const OVL     = 'rgba(10,26,14,.90)';
+const BRIGHT  = '#c8e6c0';
+
+// ── Audio (Web Audio API — Nokia-authentic sounds) ────────────────────────────
+let AC = null;
+
+function ac() {
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if (AC.state === 'suspended') AC.resume();
+  return AC;
+}
+
+function beep(hz, startSec, durSec, vol = 0.13, wave = 'square') {
+  const a = ac();
+  const osc  = a.createOscillator();
+  const gain = a.createGain();
+  osc.connect(gain);
+  gain.connect(a.destination);
+  osc.type = wave;
+  osc.frequency.value = hz;
+  const t = a.currentTime + startSec;
+  gain.gain.setValueAtTime(vol, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + durSec);
+  osc.start(t);
+  osc.stop(t + durSec + 0.01);
+}
+
+// Nokia Snake classic "eat" — ascending two-blip E5→A5 square wave
+function sndEat()     { beep(659,.000,.055); beep(880,.070,.055); }
+
+// Descending die-sound  C5 → G4 → E4
+function sndDie()     { beep(523,.00,.10,.16); beep(392,.13,.10,.16); beep(330,.27,.18,.16); }
+
+// Ascending level-up arpeggio
+function sndLevel()   { [523,659,784,1047].forEach((f,i)=>beep(f,i*.08,.07,.11)); }
+
+// Short ready blip
+function sndStart()   { beep(659,.00,.05,.09); beep(880,.06,.05,.09); }
+
+// ── Game state ────────────────────────────────────────────────────────────────
+// direction: 0=down 1=up 2=left 3=right
+const DX = [0,0,-1,1];
+const DY = [1,-1,0,0];
+const OPP = [1,0,3,2];
+
+let snake, facing, wantDir, food, score, hiScore, level, ate, foodAnim;
+let phase = 'start';  // start | playing | paused | over
+let tid = null;
+
+hiScore = +localStorage.getItem('snk_hi') || 0;
+
+// Speed table: ms per tick, levels 1-20
+const SPD = [
+  200,185,170,157,145,133,122,112,103, 95,
+   88, 81, 75, 70, 65, 61, 57, 54, 51, 48
+];
+const FOODS_PER_LEVEL = 4; // eat 4 foods → next level (80 foods to beat all 20)
+
+function init() {
+  const mx = (COLS/2)|0, my = (ROWS/2)|0;
+  snake   = [{x:mx,y:my},{x:mx-1,y:my},{x:mx-2,y:my}];
+  facing  = 3; wantDir = 3;
+  score   = 0; level = 1; ate = 0;
+  placeFood();
+  hud();
+}
+
+function placeFood() {
+  let p;
+  do { p={x:(Math.random()*COLS)|0,y:(Math.random()*ROWS)|0}; }
+  while (snake.some(s=>s.x===p.x&&s.y===p.y));
+  food = p;
+}
+
+function hud() {
+  document.getElementById('scoreEl').textContent  = score;
+  document.getElementById('levelEl').textContent  = `LVL ${level} / 20`;
+  document.getElementById('hiEl').textContent     = `HI: ${hiScore}`;
+  const pct = ((level-1)/19)*95+5;
+  document.getElementById('levelFill').style.width = pct+'%';
+}
+
+// ── Loop ──────────────────────────────────────────────────────────────────────
+function loop() {
+  clearInterval(tid);
+  tid = setInterval(tick, SPD[level-1]);
+}
+
+function tick() {
+  facing = wantDir;
+  dirLocked = false; // unlock so player can queue next turn
+  const nx = snake[0].x + DX[facing];
+  const ny = snake[0].y + DY[facing];
+
+  if (nx<0||nx>=COLS||ny<0||ny>=ROWS || snake.some(s=>s.x===nx&&s.y===ny)) {
+    clearInterval(tid); phase='over'; sndDie(); draw(); return;
+  }
+
+  snake.unshift({x:nx,y:ny});
+
+  if (nx===food.x && ny===food.y) {
+    sndEat();
+    score += level*10;
+    if (score>hiScore) { hiScore=score; localStorage.setItem('snk_hi',hiScore); }
+    ate++;
+    const nl = Math.min(20, Math.floor(ate/FOODS_PER_LEVEL)+1);
+    if (nl>level) { level=nl; sndLevel(); loop(); }
+    placeFood();
+    hud();
+  } else {
+    snake.pop();
+  }
+  draw();
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+// d: 0=down 1=up 2=left 3=right
+let dirLocked = false; // only one direction change allowed per tick
+
+function dir2(d) {
+  ac();
+  if (phase==='over'||phase==='start') { startGame(); return; }
+  // Check against wantDir (not facing) so a queued turn can't be immediately reversed
+  if (phase==='playing' && !dirLocked && d !== OPP[wantDir]) {
+    wantDir = d;
+    dirLocked = true; // block further changes until next tick
+  }
+  flashBtn(d);
+}
+
+function flashBtn(d) {
+  const ids=['bD','bU','bL','bR'];
+  const el=document.getElementById(ids[d]);
+  if(!el)return;
+  el.classList.add('lit');
+  setTimeout(()=>el.classList.remove('lit'),120);
+}
+
+function doOK()   { ac(); (phase==='playing')?doPause():startGame(); }
+function doMenu() {
+  ac();
+  if (phase==='playing'||phase==='paused') { clearInterval(tid); phase='start'; draw(); }
+  else startGame();
+}
+function doPause() {
+  if (phase==='playing')  { clearInterval(tid); phase='paused'; draw(); }
+  else if(phase==='paused') { phase='playing'; loop(); }
+}
+function startGame() {
+  clearInterval(tid); init(); phase='playing'; sndStart(); loop();
+}
+
+// keyboard
+document.addEventListener('keydown', e=>{
+  const map={'ArrowDown':0,'ArrowUp':1,'ArrowLeft':2,'ArrowRight':3};
+  if (map[e.key]!==undefined){ e.preventDefault(); dir2(map[e.key]); return; }
+  if (e.key==='Enter'||e.key===' '){ e.preventDefault(); doOK(); }
+  if (e.key==='Escape'){ e.preventDefault(); doPause(); }
+});
+
+// swipe on canvas (direction control only — no pause-on-tap to avoid accidental resets)
+let tx,ty;
+canvas.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1) return; // ignore multi-touch (palm, two fingers)
+  tx=e.touches[0].clientX; ty=e.touches[0].clientY;
+  e.preventDefault();
+},{passive:false});
+canvas.addEventListener('touchend',e=>{
+  if(e.changedTouches.length!==1) return;
+  const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)<20&&Math.abs(dy)<20) return; // too short — ignore, don't pause
+  if(Math.abs(dx)>Math.abs(dy)) dir2(dx>0?3:2);
+  else dir2(dy>0?0:1);
+  e.preventDefault();
+},{passive:false});
+
+// ── Drawing ───────────────────────────────────────────────────────────────────
+function draw() {
+  const W=canvas.width, H=canvas.height;
+
+  // background + grid
+  ctx.fillStyle=BG; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle=GRID; ctx.lineWidth=.3;
+  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*CELL,0);ctx.lineTo(c*CELL,H);ctx.stroke();}
+  for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CELL);ctx.lineTo(W,r*CELL);ctx.stroke();}
+
+  // food (blink when dead)
+  if(phase!=='over'||Math.floor(foodAnim/7)%2===0){
+    const fx=food.x*CELL,fy=food.y*CELL,pad=Math.max(2,CELL/7|0);
+    ctx.fillStyle=FOOD_C;
+    ctx.fillRect(fx+pad,fy+pad,CELL-pad*2,CELL-pad*2);
+    ctx.fillStyle=BG;
+    ctx.fillRect(fx+pad+1,fy+pad+1,2,2);
+  }
+
+  // body
+  ctx.fillStyle=BODY;
+  for(let i=1;i<snake.length;i++)
+    ctx.fillRect(snake[i].x*CELL+1,snake[i].y*CELL+1,CELL-2,CELL-2);
+
+  // head + eyes
+  if(snake.length){
+    const h=snake[0], px=h.x*CELL, py=h.y*CELL;
+    ctx.fillStyle=HEAD; ctx.fillRect(px+1,py+1,CELL-2,CELL-2);
+    ctx.fillStyle=EYE_C;
+    const e=Math.max(1,CELL/6|0), o=Math.max(1,CELL/7|0);
+    let ax,ay,bx,by;
+    if(facing===3){ax=px+CELL-e-o;ay=py+o;      bx=ax;by=py+CELL-e-o;}
+    else if(facing===2){ax=px+o;ay=py+o;         bx=ax;by=py+CELL-e-o;}
+    else if(facing===1){ax=px+o;ay=py+o;         bx=px+CELL-e-o;by=ay;}
+    else               {ax=px+o;ay=py+CELL-e-o; bx=px+CELL-e-o;by=ay;}
+    ctx.fillRect(ax,ay,e,e); ctx.fillRect(bx,by,e,e);
+  }
+
+  // overlays
+  ctx.textAlign='center';
+  const cw=canvas.width/2, ch=canvas.height/2;
+  const fs=Math.max(10,CELL-2);
+
+  if(phase==='start'){
+    overlay(cw,ch-8,210,94);
+    ctx.fillStyle=BRIGHT;
+    ctx.font=`bold ${fs}px "Courier New"`;
+    ctx.fillText('NOKIA SNAKE II',cw,ch-32);
+    ctx.font=`${fs-3}px "Courier New"`;
+    ctx.fillText('20 LEVELS OF SPEED',cw,ch-14);
+    ctx.fillText('Swipe or arrow keys',cw,ch+6);
+    ctx.fillText('OK / Enter to start',cw,ch+22);
+    ctx.fillText(`HI SCORE: ${hiScore}`,cw,ch+40);
+  }
+
+  if(phase==='paused'){
+    overlay(cw,ch,120,42);
+    ctx.fillStyle=BRIGHT;
+    ctx.font=`bold ${fs}px "Courier New"`;
+    ctx.fillText('PAUSED',cw,ch+5);
+  }
+
+  if(phase==='over'){
+    foodAnim++;
+    overlay(cw,ch-8,196,106);
+    ctx.fillStyle=BRIGHT;
+    ctx.font=`bold ${fs}px "Courier New"`;
+    ctx.fillText('GAME OVER',cw,ch-36);
+    ctx.font=`${fs-3}px "Courier New"`;
+    ctx.fillText(`Score : ${score}`,cw,ch-16);
+    ctx.fillText(`Level : ${level}/20`,cw,ch+0);
+    ctx.fillText(`Best  : ${hiScore}`,cw,ch+16);
+    ctx.font=`${fs-5}px "Courier New"`;
+    ctx.fillText('Press OK to try again',cw,ch+36);
+  }
+}
+
+function overlay(cx,cy,w,h){
+  ctx.fillStyle=OVL;
+  ctx.fillRect(cx-w/2,cy-h/2,w,h);
+}
+
+// ── Animation frame (keeps game-over food blinking) ───────────────────────────
+(function frame(){if(phase==='over')draw();requestAnimationFrame(frame);})();
+
+// ── Share ─────────────────────────────────────────────────────────────────────
+function openShare(){
+  const hosted=location.protocol==='http:'||location.protocol==='https:';
+  document.getElementById('shareHosted').style.display=hosted?'block':'none';
+  document.getElementById('shareLocal').style.display=hosted?'none':'block';
+  document.getElementById('shareOverlay').classList.add('on');
+}
+function closeShare(){ document.getElementById('shareOverlay').classList.remove('on'); }
+
+function waShare(){
+  const msg=encodeURIComponent(
+    '🐍 Play Nokia Snake II — 20 levels of classic fun!\n'+
+    'No download needed, just open the link:\n\n'+location.href
+  );
+  window.open('https://wa.me/?text='+msg,'_blank');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+init(); hud(); draw();
+</script>
+</body>
+</html>
